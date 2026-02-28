@@ -1,0 +1,48 @@
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.appHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+}
+
+.appTitle {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.appNav a {
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.9;
+}
+
+.appNav a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.appMain {
+  padding: 18px;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.appFooter {
+  padding: 12px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0.85;
+  font-size: 12px;
+}
+
