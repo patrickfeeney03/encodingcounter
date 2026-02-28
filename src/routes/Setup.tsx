@@ -104,6 +104,10 @@ export default function Setup() {
       <p className="muted">
         Create a countdown link. Signed links are tamper-evident for anyone who knows the passphrase.
       </p>
+      <p className="muted">
+        Anyone with the passphrase can also generate new signed links (there is no way around this without a backend or
+        publisher key pinning).
+      </p>
 
       <div className="form">
         <label>
@@ -140,9 +144,6 @@ export default function Setup() {
           <button className="primary" onClick={() => void generateLinks()}>
             Generate links
           </button>
-          <a className="secondary" href="#/c">
-            Open countdown (empty)
-          </a>
         </div>
       </div>
 
@@ -170,4 +171,3 @@ export default function Setup() {
     </section>
   )
 }
-

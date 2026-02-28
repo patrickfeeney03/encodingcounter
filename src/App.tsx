@@ -35,7 +35,7 @@ function App() {
       <main className="appMain">{route}</main>
       <footer className="appFooter">
         <span>
-          Tip: signed links are tamper-evident only for people who know the same passphrase.
+          Tip: signed links verify with a shared passphrase.
         </span>
       </footer>
     </div>

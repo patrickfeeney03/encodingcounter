@@ -12,13 +12,14 @@ export default function Countdown(props: Props) {
   const parsed = useMemo(() => parseCountdownFromSearchParams(props.searchParams), [props.searchParams])
   const [now, setNow] = useState(() => Date.now())
   const [passphrase, setPassphrase] = useState('')
-  const isSignedLink = parsed.ok && Boolean(parsed.value.signed)
-  const [verifyState, setVerifyState] = useState<VerifyState>(() =>
-    isSignedLink ? 'needs-passphrase' : 'unsigned',
-  )
-  const [verifyDetail, setVerifyDetail] = useState<string | null>(() =>
-    isSignedLink ? 'Enter the passphrase to verify this link.' : null,
-  )
+  const [verifyState, setVerifyState] = useState<VerifyState>(() => {
+    if (!parsed.ok || !parsed.value.signed) return 'unsigned'
+    return 'needs-passphrase'
+  })
+  const [verifyDetail, setVerifyDetail] = useState<string | null>(() => {
+    if (!parsed.ok || !parsed.value.signed) return null
+    return 'Enter the passphrase to verify this link.'
+  })
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 250)
@@ -28,14 +29,14 @@ export default function Countdown(props: Props) {
   async function verify() {
     if (!parsed.ok) return
     if (!parsed.value.signed) return
+
+    setVerifyState('verifying')
+    setVerifyDetail('Verifying…')
     if (!passphrase) {
       setVerifyState('needs-passphrase')
       setVerifyDetail('Enter the passphrase to verify this link.')
       return
     }
-
-    setVerifyState('verifying')
-    setVerifyDetail('Verifying…')
     try {
       const { t, l, signed } = parsed.value
       const payload = buildCanonicalPayload({ v: URL_VERSION, t, l, k: signed.k, i: signed.i })
@@ -111,6 +112,7 @@ export default function Countdown(props: Props) {
             />
           </label>
         )}
+
         {parsed.value.signed && (
           <div className="row" style={{ marginTop: 10 }}>
             <button className="primary" onClick={() => void verify()} disabled={verifyState === 'verifying'}>
@@ -120,8 +122,8 @@ export default function Countdown(props: Props) {
         )}
         {verifyDetail && <p className="muted">{verifyDetail}</p>}
         <p className="muted">
-          Note: without a backend, unsigned links can be edited freely. Signed links are only tamper-evident for
-          people who know the passphrase.
+          Note: anyone with the passphrase can generate new signed links. This is tamper-evident only for people
+          who know the passphrase.
         </p>
       </div>
 

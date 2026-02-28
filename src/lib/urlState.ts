@@ -100,4 +100,3 @@ export function parseCountdownFromSearchParams(searchParams: URLSearchParams): P
 
   return { ok: true, value: { v: URL_VERSION, t, l, signed: { k, i, s } } }
 }
-
