@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  getNotificationPermission,
+  playAlertTone,
+  requestNotificationPermission,
+  sendCompletionNotification,
+  type NotificationPermissionState,
+} from '../lib/alerts'
 import { fromBase64Url } from '../lib/base64url'
 import { deriveHmacKey, verifyHmacSha256Base64Url } from '../lib/crypto'
 import { breakdownMs, getRemainingMs, pad2 } from '../lib/time'
@@ -8,10 +15,18 @@ type Props = { searchParams: URLSearchParams }
 
 type VerifyState = 'unsigned' | 'needs-passphrase' | 'needs-verification' | 'verifying' | 'verified' | 'invalid'
 
+const CLOSE_WARNING_WINDOW_MS = 10 * 60 * 1000
+const CLOSE_WARNING_TEXT = 'A countdown alert is near. Closing this tab can prevent alerts.'
+
 export default function Countdown(props: Props) {
   const parsed = useMemo(() => parseCountdownFromSearchParams(props.searchParams), [props.searchParams])
   const [now, setNow] = useState(() => Date.now())
   const [passphrase, setPassphrase] = useState('')
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermissionState>(() =>
+    getNotificationPermission(),
+  )
+  const [alertDetail, setAlertDetail] = useState<string | null>(null)
+  const hasTriggeredAlertRef = useRef(false)
   const [verifyState, setVerifyState] = useState<VerifyState>(() => {
     if (!parsed.ok || !parsed.value.signed) return 'unsigned'
     return 'needs-passphrase'
@@ -25,6 +40,81 @@ export default function Countdown(props: Props) {
     const id = window.setInterval(() => setNow(Date.now()), 250)
     return () => window.clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    const syncPermission = () => setNotificationPermission(getNotificationPermission())
+    syncPermission()
+    document.addEventListener('visibilitychange', syncPermission)
+    return () => document.removeEventListener('visibilitychange', syncPermission)
+  }, [])
+
+  const targetMs = parsed.ok ? parsed.value.t : 0
+  const remaining = parsed.ok ? getRemainingMs(targetMs, now) : 0
+  const shouldWarnOnClose = parsed.ok && remaining > 0 && remaining <= CLOSE_WARNING_WINDOW_MS
+
+  useEffect(() => {
+    if (!shouldWarnOnClose) return
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = CLOSE_WARNING_TEXT
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [shouldWarnOnClose])
+
+  useEffect(() => {
+    if (!parsed.ok) return
+    if (remaining > 0) return
+    if (hasTriggeredAlertRef.current) return
+    hasTriggeredAlertRef.current = true
+
+    const label = parsed.value.l ? parsed.value.l : 'Countdown'
+    const notificationSent = sendCompletionNotification({
+      title: `${label} reached zero`,
+      body: 'The countdown has completed.',
+    })
+    const detailParts: string[] = []
+    if (notificationSent) {
+      detailParts.push('Browser notification sent.')
+    } else if (notificationPermission === 'unsupported') {
+      detailParts.push('Browser notifications are unsupported.')
+    } else if (notificationPermission === 'denied') {
+      detailParts.push('Browser notifications are blocked.')
+    } else {
+      detailParts.push('Browser notifications are not enabled.')
+    }
+
+    let cancelled = false
+    void (async () => {
+      const audioPlayed = await playAlertTone()
+      if (cancelled) return
+      detailParts.push(audioPlayed ? 'Audio alert played.' : 'Audio alert blocked or unavailable.')
+      setAlertDetail(detailParts.join(' '))
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [parsed, remaining, notificationPermission])
+
+  async function enableNotifications() {
+    const permission = await requestNotificationPermission()
+    setNotificationPermission(permission)
+    if (permission === 'granted') {
+      setAlertDetail('Notifications enabled. You will receive a browser notification at zero while this tab is open.')
+      return
+    }
+    if (permission === 'denied') {
+      setAlertDetail('Notification permission denied. Re-enable notifications from browser site settings.')
+      return
+    }
+    if (permission === 'default') {
+      setAlertDetail('Notification permission was dismissed.')
+      return
+    }
+    setAlertDetail('Notifications are unsupported in this browser.')
+  }
 
   async function verify() {
     if (!parsed.ok) return
@@ -66,9 +156,6 @@ export default function Countdown(props: Props) {
       </section>
     )
   }
-
-  const targetMs = parsed.value.t
-  const remaining = getRemainingMs(targetMs, now)
   const parts = breakdownMs(remaining)
   const targetDate = new Date(targetMs)
 
@@ -86,6 +173,29 @@ export default function Countdown(props: Props) {
         <div className="muted">
           Target: {targetDate.toLocaleString()} ({targetDate.toISOString()})
         </div>
+      </div>
+
+      <div className="alerts">
+        <h2>Alerts</h2>
+        <p className="muted">Audio plays at zero while this tab stays open.</p>
+        <p className="muted">Notification permission: {notificationPermission}</p>
+        {notificationPermission === 'default' && remaining > 0 && (
+          <div className="row" style={{ marginTop: 10 }}>
+            <button className="primary" onClick={() => void enableNotifications()}>
+              Enable browser notifications
+            </button>
+          </div>
+        )}
+        {shouldWarnOnClose && (
+          <p className="warning">
+            Alert window is active (final 10 minutes). Closing this tab can prevent alerts.
+          </p>
+        )}
+        {remaining <= 0 && <p className="status">Countdown complete.</p>}
+        {alertDetail && <p className="muted">{alertDetail}</p>}
+        <p className="muted">
+          Limitation: without a backend or push service, alerts cannot continue after this tab is closed.
+        </p>
       </div>
 
       <div className="verify">
