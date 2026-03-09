@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildTimerItemFromDraft,
   COUNTDOWN_PAST_STATUS,
   ELAPSED_FUTURE_STATUS,
   INVALID_DATETIME_STATUS,
@@ -54,16 +55,42 @@ describe('setupValidation', () => {
     ).toBe(ELAPSED_FUTURE_STATUS)
   })
 
-  it('allows elapsed dates in the past', () => {
+  it('builds a live elapsed item from a valid draft', () => {
     const nowMs = Date.UTC(2026, 2, 9, 12, 34, 45)
-
     expect(
-      getSetupValidationWarning({
-        mode: 'elapsed',
+      buildTimerItemFromDraft(
+        {
+          mode: 'elapsed',
+          paused: false,
+          targetMs: Date.UTC(2026, 2, 9, 12, 34, 0),
+          label: 'Elapsed',
+        },
         nowMs,
-        targetMs: Date.UTC(2026, 2, 9, 12, 34, 0),
-      }),
-    ).toBeNull()
+      ),
+    ).toEqual({
+      mode: 'elapsed',
+      targetMs: Date.UTC(2026, 2, 9, 12, 34, 0),
+      label: 'Elapsed',
+    })
+  })
+
+  it('builds a paused item by freezing the elapsed duration at generation time', () => {
+    const nowMs = Date.UTC(2026, 2, 9, 12, 34, 45)
+    expect(
+      buildTimerItemFromDraft(
+        {
+          mode: 'elapsed',
+          paused: true,
+          targetMs: Date.UTC(2026, 2, 9, 12, 30, 15),
+          label: 'Paused',
+        },
+        nowMs,
+      ),
+    ).toEqual({
+      mode: 'paused',
+      durationMs: 270000,
+      label: 'Paused',
+    })
   })
 
   it('rounds down to the start of the current minute', () => {

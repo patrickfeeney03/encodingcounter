@@ -71,14 +71,14 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return Notification.requestPermission()
 }
 
-export function sendCompletionNotification(input: { title: string; body: string }): boolean {
+export function sendCompletionNotification(input: { title: string; body: string; tag?: string }): boolean {
   if (!canUseNotifications()) return false
   if (Notification.permission !== 'granted') return false
 
   try {
     new Notification(input.title, {
       body: input.body,
-      tag: 'countdown-complete',
+      tag: input.tag ?? 'countdown-complete',
       requireInteraction: true,
     })
     return true

@@ -64,14 +64,36 @@ code {
   margin-top: 12px;
 }
 
-.setupLayout {
+.timerDraftCard {
   display: grid;
-  gap: 24px;
-  margin-top: 18px;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.setupPrimary,
-.setupSecondary {
+.timerDraftHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.timerDraftHeader h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.timerDraftBody {
+  display: grid;
+  gap: 14px;
+}
+
+.timerDraftFields {
+  display: grid;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -100,6 +122,17 @@ input {
 .choiceGroup legend {
   padding: 0;
   font-size: 14px;
+}
+
+.inlineChoice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inlineChoice input {
+  width: auto;
+  margin: 0;
 }
 
 button {
@@ -167,29 +200,56 @@ button:hover {
   margin-top: 14px;
 }
 
-.previewPanel {
+.timerGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.timerCard {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.timerCard h2,
+.timerCard h3 {
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+.timerDraftPreview {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.timerDraftPreview h3 {
+  margin: 0;
+}
+
+.generationPanel {
+  display: grid;
+  gap: 12px;
   padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.freezePanel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .previewNote {
   margin-top: 12px;
 }
 
-.previewWarning,
 .setupWarning {
   margin-bottom: 0;
-}
-
-@media (min-width: 900px) {
-  .setupLayout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .setupSecondary {
-    margin-top: 12px;
-  }
 }
 
 .linkRow {
@@ -280,4 +340,15 @@ button:hover {
 .pill-verifying {
   border-color: rgba(251, 191, 36, 0.55);
   background: rgba(251, 191, 36, 0.10);
+}
+
+@media (min-width: 900px) {
+  .timerDraftBody {
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    align-items: start;
+  }
+
+  .timerGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
