@@ -24,20 +24,7 @@ function App() {
 
   return (
     <div className="app">
-      <header className="appHeader">
-        <a className="appTitle" href="#/">
-          Countdown Link
-        </a>
-        <nav className="appNav">
-          <a href="#/">Setup</a>
-        </nav>
-      </header>
       <main className="appMain">{route}</main>
-      <footer className="appFooter">
-        <span>
-          Tip: signed links verify with a shared passphrase.
-        </span>
-      </footer>
     </div>
   )
 }

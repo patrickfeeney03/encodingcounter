@@ -6,9 +6,10 @@ import {
   sendCompletionNotification,
   type NotificationPermissionState,
 } from '../lib/alerts'
+import TimerSummary from '../components/TimerSummary'
 import { fromBase64Url } from '../lib/base64url'
 import { deriveHmacKey, verifyHmacSha256Base64Url } from '../lib/crypto'
-import { breakdownMs, getRemainingMs, pad2 } from '../lib/time'
+import { getRemainingMs } from '../lib/time'
 import { buildCanonicalPayload, parseCountdownFromSearchParams, URL_VERSION } from '../lib/urlState'
 
 type Props = { searchParams: URLSearchParams }
@@ -48,9 +49,11 @@ export default function Countdown(props: Props) {
     return () => document.removeEventListener('visibilitychange', syncPermission)
   }, [])
 
+  const isElapsed = parsed.ok && parsed.value.mode === 'elapsed'
   const targetMs = parsed.ok ? parsed.value.t : 0
-  const remaining = parsed.ok ? getRemainingMs(targetMs, now) : 0
-  const shouldWarnOnClose = parsed.ok && remaining > 0 && remaining <= CLOSE_WARNING_WINDOW_MS
+  const remaining = parsed.ok && !isElapsed ? getRemainingMs(targetMs, now) : 0
+  const shouldWarnOnClose = parsed.ok && !isElapsed && remaining > 0 && remaining <= CLOSE_WARNING_WINDOW_MS
+  const elapsedLinkStartsInFuture = parsed.ok && isElapsed && targetMs > now
 
   useEffect(() => {
     if (!shouldWarnOnClose) return
@@ -64,6 +67,7 @@ export default function Countdown(props: Props) {
   }, [shouldWarnOnClose])
 
   useEffect(() => {
+    if (isElapsed) return
     if (!parsed.ok) return
     if (remaining > 0) return
     if (hasTriggeredAlertRef.current) return
@@ -96,7 +100,7 @@ export default function Countdown(props: Props) {
     return () => {
       cancelled = true
     }
-  }, [parsed, remaining, notificationPermission])
+  }, [isElapsed, parsed, remaining, notificationPermission])
 
   async function enableNotifications() {
     const permission = await requestNotificationPermission()
@@ -128,8 +132,15 @@ export default function Countdown(props: Props) {
       return
     }
     try {
-      const { t, l, signed } = parsed.value
-      const payload = buildCanonicalPayload({ v: URL_VERSION, t, l, k: signed.k, i: signed.i })
+      const { mode, signed, t, l, v } = parsed.value
+      const payload = buildCanonicalPayload({
+        v,
+        t,
+        m: v === URL_VERSION ? mode : undefined,
+        l,
+        k: signed.k,
+        i: signed.i,
+      })
       const saltBytes = fromBase64Url(signed.k)
       const key = await deriveHmacKey({ passphrase, saltBytes, iterations: signed.i })
       const ok = await verifyHmacSha256Base64Url({ key, data: payload, signatureBase64Url: signed.s })
@@ -145,58 +156,48 @@ export default function Countdown(props: Props) {
     }
   }
 
-  if (!parsed.ok) {
+  if (!parsed.ok || elapsedLinkStartsInFuture) {
     return (
       <section className="panel">
-        <h1>Countdown</h1>
-        <p className="error">{parsed.error}</p>
+        <h1>Timer</h1>
+        <p className="error">
+          {parsed.ok ? 'Elapsed links must point to a past date/time.' : parsed.error}
+        </p>
         <p>
           <a href="#/">Go back to Setup</a>
         </p>
       </section>
     )
   }
-  const parts = breakdownMs(remaining)
-  const targetDate = new Date(targetMs)
 
   return (
     <section className="panel">
-      <h1>{parsed.value.l ? parsed.value.l : 'Countdown'}</h1>
+      <TimerSummary label={parsed.value.l} mode={parsed.value.mode} nowMs={now} targetMs={targetMs} />
 
-      <div className="countdown">
-        <div className="bigTime">
-          <span className="days">{parts.days}d</span>
-          <span className="hms">
-            {pad2(parts.hours)}:{pad2(parts.minutes)}:{pad2(parts.seconds)}
-          </span>
-        </div>
-        <div className="muted">
-          Target: {targetDate.toLocaleString()} ({targetDate.toISOString()})
-        </div>
-      </div>
-
-      <div className="alerts">
-        <h2>Alerts</h2>
-        <p className="muted">Audio plays at zero while this tab stays open.</p>
-        <p className="muted">Notification permission: {notificationPermission}</p>
-        {notificationPermission === 'default' && remaining > 0 && (
-          <div className="row" style={{ marginTop: 10 }}>
-            <button className="primary" onClick={() => void enableNotifications()}>
-              Enable browser notifications
-            </button>
-          </div>
-        )}
-        {shouldWarnOnClose && (
-          <p className="warning">
-            Alert window is active (final 10 minutes). Closing this tab can prevent alerts.
+      {!isElapsed && (
+        <div className="alerts">
+          <h2>Alerts</h2>
+          <p className="muted">Audio plays at zero while this tab stays open.</p>
+          <p className="muted">Notification permission: {notificationPermission}</p>
+          {notificationPermission === 'default' && remaining > 0 && (
+            <div className="row" style={{ marginTop: 10 }}>
+              <button className="primary" onClick={() => void enableNotifications()}>
+                Enable browser notifications
+              </button>
+            </div>
+          )}
+          {shouldWarnOnClose && (
+            <p className="warning">
+              Alert window is active (final 10 minutes). Closing this tab can prevent alerts.
+            </p>
+          )}
+          {remaining <= 0 && <p className="status">Countdown complete.</p>}
+          {alertDetail && <p className="muted">{alertDetail}</p>}
+          <p className="muted">
+            Limitation: without a backend or push service, alerts cannot continue after this tab is closed.
           </p>
-        )}
-        {remaining <= 0 && <p className="status">Countdown complete.</p>}
-        {alertDetail && <p className="muted">{alertDetail}</p>}
-        <p className="muted">
-          Limitation: without a backend or push service, alerts cannot continue after this tab is closed.
-        </p>
-      </div>
+        </div>
+      )}
 
       <div className="verify">
         <h2>Link verification</h2>

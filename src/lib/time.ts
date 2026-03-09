@@ -2,6 +2,10 @@ export function getRemainingMs(targetMs: number, nowMs: number): number {
   return Math.max(0, targetMs - nowMs)
 }
 
+export function getElapsedMs(targetMs: number, nowMs: number): number {
+  return Math.max(0, nowMs - targetMs)
+}
+
 export type TimeParts = {
   days: number
   hours: number
@@ -21,4 +25,3 @@ export function breakdownMs(ms: number): TimeParts {
 export function pad2(n: number): string {
   return n.toString().padStart(2, '0')
 }
-

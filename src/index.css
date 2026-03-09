@@ -64,6 +64,17 @@ code {
   margin-top: 12px;
 }
 
+.setupLayout {
+  display: grid;
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.setupPrimary,
+.setupSecondary {
+  min-width: 0;
+}
+
 label {
   display: grid;
   gap: 6px;
@@ -76,6 +87,19 @@ input {
   border: 1px solid rgba(255, 255, 255, 0.10);
   background: rgba(0, 0, 0, 0.35);
   color: inherit;
+}
+
+.choiceGroup {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.choiceGroup legend {
+  padding: 0;
+  font-size: 14px;
 }
 
 button {
@@ -98,6 +122,34 @@ button:hover {
   flex-wrap: wrap;
 }
 
+.modeToggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.modeOption {
+  text-align: left;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.modeOption:hover {
+  border-color: rgba(147, 197, 253, 0.72);
+  background: rgba(147, 197, 253, 0.16);
+}
+
+.modeOption:focus-visible {
+  outline: 2px solid rgba(147, 197, 253, 0.92);
+  outline-offset: 2px;
+}
+
+.modeOptionActive {
+  border-color: rgba(99, 102, 241, 0.75);
+  background: rgba(99, 102, 241, 0.22);
+}
+
 .primary {
   border-color: rgba(99, 102, 241, 0.55);
   background: rgba(99, 102, 241, 0.18);
@@ -113,6 +165,31 @@ button:hover {
 
 .result {
   margin-top: 14px;
+}
+
+.previewPanel {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
+}
+
+.previewNote {
+  margin-top: 12px;
+}
+
+.previewWarning,
+.setupWarning {
+  margin-bottom: 0;
+}
+
+@media (min-width: 900px) {
+  .setupLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .setupSecondary {
+    margin-top: 12px;
+  }
 }
 
 .linkRow {
